@@ -11,6 +11,7 @@ interface PropertyContextType {
   configLoaded: boolean;
   updateSheetUrl: (url: string) => Promise<void>;
   clearSheetUrl: () => Promise<void>;
+  loadSheetUrlFromDb: () => Promise<string>;
   getPropertyById: (id: string) => Property | undefined;
   getFeaturedProperties: () => Property[];
   getAvailableProperties: () => Property[];

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Building2, Users, Phone, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
@@ -15,6 +16,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { user, isAdmin } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,12 +67,14 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <Link to="/admin">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Setup
-                </Button>
-              </Link>
+              {user && isAdmin && (
+                <Link to="/admin">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Admin
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -136,15 +140,17 @@ export function Navbar() {
             })}
           </div>
 
-          {/* Footer */}
-          <div className="p-6 border-t">
-            <Link to="/admin" onClick={() => setIsOpen(false)}>
-              <Button variant="outline" className="w-full gap-2">
-                <Settings className="h-4 w-4" />
-                Sheet Setup
-              </Button>
-            </Link>
-          </div>
+          {/* Footer - only show admin link if user is admin */}
+          {user && isAdmin && (
+            <div className="p-6 border-t">
+              <Link to="/admin" onClick={() => setIsOpen(false)}>
+                <Button variant="outline" className="w-full gap-2">
+                  <Settings className="h-4 w-4" />
+                  Admin Panel
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </>
