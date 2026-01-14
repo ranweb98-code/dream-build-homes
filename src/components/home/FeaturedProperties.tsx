@@ -39,6 +39,12 @@ export function FeaturedProperties() {
               <div key={i} className="bg-card rounded-lg h-96 animate-pulse" />
             ))}
           </div>
+        ) : featured.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              No featured properties available at the moment.
+            </p>
+          </div>
         ) : (
           <PropertyGrid properties={featured} onInquire={handleInquire} />
         )}

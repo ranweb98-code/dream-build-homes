@@ -8,8 +8,9 @@ interface PropertyContextType {
   error: string | null;
   sheetUrl: string;
   isUsingSheet: boolean;
-  updateSheetUrl: (url: string) => void;
-  clearSheetUrl: () => void;
+  configLoaded: boolean;
+  updateSheetUrl: (url: string) => Promise<void>;
+  clearSheetUrl: () => Promise<void>;
   getPropertyById: (id: string) => Property | undefined;
   getFeaturedProperties: () => Property[];
   getAvailableProperties: () => Property[];

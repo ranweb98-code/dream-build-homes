@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Property } from '@/types/property';
-import { sampleProperties } from '@/data/sampleProperties';
-
-const SHEET_URL_KEY = 'property_sheet_url';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SheetRow {
   id: string;
@@ -40,7 +38,6 @@ function parseSheetData(data: SheetRow[]): Property[] {
 }
 
 function convertSheetUrlToJsonUrl(url: string): string | null {
-  // Handle various Google Sheets URL formats
   const patterns = [
     /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
     /\/d\/([a-zA-Z0-9-_]+)/,
@@ -57,7 +54,6 @@ function convertSheetUrlToJsonUrl(url: string): string | null {
 }
 
 function parseGoogleSheetsResponse(text: string): SheetRow[] {
-  // Google Sheets returns JSONP-like response, extract the JSON
   const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?$/);
   if (!jsonMatch) {
     throw new Error('Invalid Google Sheets response format');
@@ -95,28 +91,50 @@ function parseGoogleSheetsResponse(text: string): SheetRow[] {
 }
 
 export function useProperties() {
-  const [properties, setProperties] = useState<Property[]>(sampleProperties);
-  const [loading, setLoading] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sheetUrl, setSheetUrl] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(SHEET_URL_KEY) || '';
-    }
-    return '';
-  });
+  const [sheetUrl, setSheetUrl] = useState<string>('');
   const [isUsingSheet, setIsUsingSheet] = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Load sheet URL from database on mount
+  const loadSheetUrlFromDb = useCallback(async () => {
+    try {
+      const { data, error: dbError } = await supabase
+        .from('site_config')
+        .select('value')
+        .eq('key', 'google_sheet_url')
+        .maybeSingle();
+
+      if (dbError) throw dbError;
+      
+      const url = data?.value || '';
+      setSheetUrl(url);
+      setConfigLoaded(true);
+      return url;
+    } catch (err) {
+      console.error('Failed to load config:', err);
+      setConfigLoaded(true);
+      return '';
+    }
+  }, []);
 
   const fetchFromSheet = useCallback(async (url: string) => {
     if (!url.trim()) {
-      setProperties(sampleProperties);
+      // No sheet URL - show empty state
+      setProperties([]);
       setIsUsingSheet(false);
       setError(null);
+      setLoading(false);
       return;
     }
 
     const jsonUrl = convertSheetUrlToJsonUrl(url);
     if (!jsonUrl) {
       setError('Invalid Google Sheets URL. Please use a valid sharing link.');
+      setProperties([]);
+      setLoading(false);
       return;
     }
 
@@ -139,34 +157,53 @@ export function useProperties() {
 
       setProperties(parsed);
       setIsUsingSheet(true);
-      localStorage.setItem(SHEET_URL_KEY, url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load properties');
-      setProperties(sampleProperties);
+      setProperties([]);
       setIsUsingSheet(false);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const clearSheetUrl = useCallback(() => {
-    localStorage.removeItem(SHEET_URL_KEY);
-    setSheetUrl('');
-    setProperties(sampleProperties);
-    setIsUsingSheet(false);
-    setError(null);
+  const saveSheetUrlToDb = useCallback(async (url: string) => {
+    try {
+      const { error: dbError } = await supabase
+        .from('site_config')
+        .update({ value: url })
+        .eq('key', 'google_sheet_url');
+
+      if (dbError) throw dbError;
+      return true;
+    } catch (err) {
+      console.error('Failed to save config:', err);
+      return false;
+    }
   }, []);
 
-  const updateSheetUrl = useCallback((url: string) => {
-    setSheetUrl(url);
-    fetchFromSheet(url);
-  }, [fetchFromSheet]);
+  const clearSheetUrl = useCallback(async () => {
+    await saveSheetUrlToDb('');
+    setSheetUrl('');
+    setProperties([]);
+    setIsUsingSheet(false);
+    setError(null);
+  }, [saveSheetUrlToDb]);
 
-  // Load from sheet on mount if URL exists
-  useEffect(() => {
-    if (sheetUrl) {
-      fetchFromSheet(sheetUrl);
+  const updateSheetUrl = useCallback(async (url: string) => {
+    setSheetUrl(url);
+    const saved = await saveSheetUrlToDb(url);
+    if (saved) {
+      await fetchFromSheet(url);
     }
+  }, [saveSheetUrlToDb, fetchFromSheet]);
+
+  // Load config and properties on mount
+  useEffect(() => {
+    const init = async () => {
+      const url = await loadSheetUrlFromDb();
+      await fetchFromSheet(url);
+    };
+    init();
   }, []);
 
   const getPropertyById = useCallback((id: string): Property | undefined => {
@@ -187,6 +224,7 @@ export function useProperties() {
     error,
     sheetUrl,
     isUsingSheet,
+    configLoaded,
     updateSheetUrl,
     clearSheetUrl,
     getPropertyById,
