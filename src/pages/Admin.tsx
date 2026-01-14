@@ -12,8 +12,8 @@ import { Loader2, CheckCircle, AlertCircle, Database, RefreshCw, LogOut } from '
 export default function Admin() {
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, checkingAdmin, signOut } = useAuth();
-  const { sheetUrl, updateSheetUrl, clearSheetUrl, isUsingSheet, loading, error, refetch, properties } = usePropertyContext();
-  const [inputUrl, setInputUrl] = useState(sheetUrl);
+  const { sheetUrl, updateSheetUrl, clearSheetUrl, isUsingSheet, loading, error, refetch, properties, loadSheetUrlFromDb } = usePropertyContext();
+  const [inputUrl, setInputUrl] = useState('');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -29,6 +29,17 @@ export default function Admin() {
       navigate('/');
     }
   }, [user, authLoading, isAdmin, checkingAdmin, navigate]);
+
+  // Load sheet URL for admin
+  useEffect(() => {
+    const loadUrl = async () => {
+      if (user && isAdmin) {
+        const url = await loadSheetUrlFromDb();
+        setInputUrl(url);
+      }
+    };
+    loadUrl();
+  }, [user, isAdmin, loadSheetUrlFromDb]);
 
   // Update input when sheetUrl changes
   useEffect(() => {
