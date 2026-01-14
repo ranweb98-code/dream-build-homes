@@ -11,7 +11,7 @@ import { Loader2, CheckCircle, AlertCircle, Database, RefreshCw, LogOut } from '
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, isAdmin, checkingAdmin, signOut } = useAuth();
   const { sheetUrl, updateSheetUrl, clearSheetUrl, isUsingSheet, loading, error, refetch, properties } = usePropertyContext();
   const [inputUrl, setInputUrl] = useState(sheetUrl);
 
@@ -21,6 +21,14 @@ export default function Admin() {
       navigate('/login');
     }
   }, [user, authLoading, navigate]);
+
+  // Redirect to home if authenticated but not admin
+  useEffect(() => {
+    if (!authLoading && !checkingAdmin && user && !isAdmin) {
+      toast.error('Access denied. Admin privileges required.');
+      navigate('/');
+    }
+  }, [user, authLoading, isAdmin, checkingAdmin, navigate]);
 
   // Update input when sheetUrl changes
   useEffect(() => {
@@ -46,7 +54,7 @@ export default function Admin() {
     toast.success('Signed out successfully');
   };
 
-  if (authLoading) {
+  if (authLoading || checkingAdmin) {
     return (
       <Layout>
         <div className="pt-28 pb-20 min-h-screen flex items-center justify-center">
@@ -56,7 +64,7 @@ export default function Admin() {
     );
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return null;
   }
 

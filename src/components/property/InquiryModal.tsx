@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -63,16 +64,26 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    console.log('Inquiry submitted:', {
-      ...data,
-      propertyId: property?.id,
-      propertyTitle: property?.title,
-    });
+    const { error } = await supabase
+      .from('inquiries')
+      .insert({
+        property_id: property?.id,
+        property_title: property?.title,
+        full_name: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        message: data.message,
+        preferred_contact: data.preferredContact,
+      });
 
     setIsSubmitting(false);
+
+    if (error) {
+      console.error('Failed to submit inquiry:', error);
+      toast.error('Failed to send inquiry. Please try again.');
+      return;
+    }
+
     setIsSuccess(true);
     
     setTimeout(() => {
