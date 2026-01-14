@@ -1,8 +1,66 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Building2, Users, Award } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+
+function useCountUp(end: number, duration: number = 2000, startOnView: boolean = true) {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!startOnView) {
+      setHasStarted(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasStarted, startOnView]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    let startTime: number;
+    let animationFrame: number;
+
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(easeOutQuart * end));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [end, duration, hasStarted]);
+
+  return { count, ref };
+}
 
 export function HeroSection() {
+  const stat1 = useCountUp(500, 2000);
+  const stat2 = useCountUp(1200, 2500);
+  const stat3 = useCountUp(15, 1500);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -42,27 +100,30 @@ export function HeroSection() {
             </Link>
           </div>
 
-          {/* Stats */}
+          {/* Stats with counting animation */}
           <div className="grid grid-cols-3 gap-6 mt-16 animate-fade-up opacity-0 stagger-3" style={{ animationFillMode: 'forwards' }}>
-            {[
-              { icon: Building2, value: '500+', label: 'Properties Sold' },
-              { icon: Users, value: '1,200+', label: 'Happy Clients' },
-              { icon: Award, value: '15+', label: 'Years Experience' },
-            ].map((stat, index) => (
-              <div key={index} className="text-center">
-                <stat.icon className="h-8 w-8 mx-auto text-accent mb-2" />
-                <p className="text-2xl sm:text-3xl font-bold text-background">{stat.value}</p>
-                <p className="text-sm text-background/70">{stat.label}</p>
-              </div>
-            ))}
+            <div className="text-center" ref={stat1.ref}>
+              <Building2 className="h-8 w-8 mx-auto text-accent mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-background tabular-nums">
+                {stat1.count.toLocaleString()}+
+              </p>
+              <p className="text-sm text-background/70">Properties Sold</p>
+            </div>
+            <div className="text-center" ref={stat2.ref}>
+              <Users className="h-8 w-8 mx-auto text-accent mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-background tabular-nums">
+                {stat2.count.toLocaleString()}+
+              </p>
+              <p className="text-sm text-background/70">Happy Clients</p>
+            </div>
+            <div className="text-center" ref={stat3.ref}>
+              <Award className="h-8 w-8 mx-auto text-accent mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-background tabular-nums">
+                {stat3.count}+
+              </p>
+              <p className="text-sm text-background/70">Years Experience</p>
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-background/50 rounded-full flex justify-center">
-          <div className="w-1.5 h-3 bg-background/50 rounded-full mt-2 animate-pulse" />
         </div>
       </div>
     </section>

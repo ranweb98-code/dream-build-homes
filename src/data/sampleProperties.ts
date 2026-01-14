@@ -83,9 +83,9 @@ export const sampleProperties: Property[] = [
     description: "Live the Miami dream in this architectural masterpiece on Star Island. 150 feet of water frontage with private dock, resort-style pool, outdoor kitchen, and guest house. The main residence features a two-story living room, home theater, gym, and smart home automation.",
     status: "sold",
     images: [
-      "https://images.unsplash.com/photo-1600607687644-c7171b42498b?w=1200",
-      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200",
-      "https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200"
     ],
     featured: false
   },
