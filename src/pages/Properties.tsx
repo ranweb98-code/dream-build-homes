@@ -31,6 +31,15 @@ export default function Properties() {
             <div className="flex justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : properties.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground text-lg">
+                No properties available at the moment.
+              </p>
+              <p className="text-muted-foreground text-sm mt-2">
+                Please check back soon for new listings.
+              </p>
+            </div>
           ) : (
             <PropertyGrid properties={properties} onInquire={handleInquire} />
           )}

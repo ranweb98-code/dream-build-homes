@@ -1,63 +1,144 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { usePropertyContext } from '@/contexts/PropertyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle, AlertCircle, Database, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Database, RefreshCw, LogOut } from 'lucide-react';
 
 export default function Admin() {
-  const { sheetUrl, updateSheetUrl, clearSheetUrl, isUsingSheet, loading, error, refetch } = usePropertyContext();
+  const navigate = useNavigate();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { sheetUrl, updateSheetUrl, clearSheetUrl, isUsingSheet, loading, error, refetch, properties } = usePropertyContext();
   const [inputUrl, setInputUrl] = useState(sheetUrl);
 
-  const handleSave = () => {
-    updateSheetUrl(inputUrl);
-    if (inputUrl.trim()) toast.success('Sheet URL saved!');
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
+
+  // Update input when sheetUrl changes
+  useEffect(() => {
+    setInputUrl(sheetUrl);
+  }, [sheetUrl]);
+
+  const handleSave = async () => {
+    await updateSheetUrl(inputUrl);
+    if (inputUrl.trim()) {
+      toast.success('Sheet URL saved and synced!');
+    }
   };
 
-  const handleClear = () => {
-    clearSheetUrl();
+  const handleClear = async () => {
+    await clearSheetUrl();
     setInputUrl('');
-    toast.success('Using sample data');
+    toast.success('Sheet URL cleared');
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    toast.success('Signed out successfully');
+  };
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="pt-28 pb-20 min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <Layout>
       <div className="pt-28 pb-20 min-h-screen">
         <div className="container mx-auto px-4 max-w-2xl">
-          <h1 className="font-display text-3xl font-bold mb-2">Admin Setup</h1>
-          <p className="text-muted-foreground mb-8">Connect your Google Sheet to display your properties.</p>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="font-display text-3xl font-bold mb-2">Admin Setup</h1>
+              <p className="text-muted-foreground">Connect your Google Sheet to display your properties.</p>
+            </div>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
 
           <div className="bg-card border rounded-lg p-6 space-y-6">
             <div className="flex items-center gap-3">
               <Database className="h-5 w-5 text-primary" />
               <span className="font-medium">Data Source:</span>
-              <span className={isUsingSheet ? 'text-success' : 'text-muted-foreground'}>
-                {isUsingSheet ? 'Google Sheet' : 'Sample Data'}
-              </span>
+              {isUsingSheet ? (
+                <span className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  Google Sheet ({properties.length} properties)
+                </span>
+              ) : (
+                <span className="text-muted-foreground">No sheet connected</span>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Google Sheet URL</Label>
-              <Input value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..." />
-              <p className="text-sm text-muted-foreground">Make sure your sheet is publicly accessible (Share → Anyone with link).</p>
+              <Input 
+                value={inputUrl} 
+                onChange={(e) => setInputUrl(e.target.value)} 
+                placeholder="https://docs.google.com/spreadsheets/d/..." 
+              />
+              <p className="text-sm text-muted-foreground">
+                Make sure your sheet is publicly accessible (Share → Anyone with link).
+              </p>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm"><AlertCircle className="h-4 w-4" />{error}</div>
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
             )}
 
             <div className="flex gap-3">
-              <Button onClick={handleSave} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}Save & Load</Button>
-              <Button variant="outline" onClick={handleClear}>Use Sample Data</Button>
-              {isUsingSheet && <Button variant="ghost" onClick={refetch}><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>}
+              <Button onClick={handleSave} disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save & Sync
+              </Button>
+              <Button variant="outline" onClick={handleClear} disabled={loading}>
+                Clear Sheet
+              </Button>
+              {isUsingSheet && (
+                <Button variant="ghost" onClick={refetch} disabled={loading}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Data
+                </Button>
+              )}
             </div>
 
             <div className="pt-6 border-t">
               <h3 className="font-semibold mb-2">Required Sheet Columns:</h3>
-              <code className="text-sm bg-muted p-3 rounded block">id, title, price, city, area, rooms, baths, size, description, status, images, featured</code>
-              <p className="text-sm text-muted-foreground mt-2">• <strong>status</strong>: "for_sale" or "sold"<br />• <strong>images</strong>: comma-separated URLs<br />• <strong>featured</strong>: "true" or "false"</p>
+              <code className="text-sm bg-muted p-3 rounded block overflow-x-auto">
+                id, title, price, city, area, rooms, baths, size, description, status, images, featured
+              </code>
+              <p className="text-sm text-muted-foreground mt-2">
+                • <strong>status</strong>: "for_sale" or "sold"<br />
+                • <strong>images</strong>: comma-separated URLs<br />
+                • <strong>featured</strong>: "true" or "false"
+              </p>
+            </div>
+
+            <div className="pt-6 border-t">
+              <h3 className="font-semibold mb-2">Logged in as:</h3>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
         </div>
