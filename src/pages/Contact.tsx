@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +31,7 @@ export default function Contact() {
   const propertyId = searchParams.get('propertyId');
   const propertyTitle = searchParams.get('propertyTitle');
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       message: propertyTitle ? `I'm interested in "${propertyTitle}" (ID: ${propertyId}).` : '',
@@ -40,10 +41,29 @@ export default function Contact() {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    console.log('Contact form:', data);
+    
+    const { error } = await supabase
+      .from('inquiries')
+      .insert({
+        property_id: propertyId,
+        property_title: propertyTitle,
+        full_name: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        message: data.message,
+        preferred_contact: data.preferredContact,
+      });
+
     setIsSubmitting(false);
+
+    if (error) {
+      console.error('Failed to submit inquiry:', error);
+      toast.error('Failed to send message. Please try again.');
+      return;
+    }
+
     setIsSuccess(true);
+    reset();
     toast.success('Message sent successfully!');
   };
 
