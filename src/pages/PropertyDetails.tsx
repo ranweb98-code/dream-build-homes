@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { usePropertyContext } from '@/contexts/PropertyContext';
@@ -13,6 +13,10 @@ export default function PropertyDetails() {
   const { id } = useParams<{ id: string }>();
   const { getPropertyById, loading } = usePropertyContext();
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const property = getPropertyById(String(id));
 
