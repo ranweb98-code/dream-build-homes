@@ -64,22 +64,39 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     
-    const { error } = await supabase
-      .from('inquiries')
-      .insert({
-        property_id: property?.id,
-        property_title: property?.title,
-        full_name: data.fullName,
-        email: data.email,
-        phone: data.phone,
-        message: data.message,
-        preferred_contact: data.preferredContact,
+    try {
+      const { data: responseData, error } = await supabase.functions.invoke('submit-inquiry', {
+        body: {
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          message: data.message,
+          preferredContact: data.preferredContact,
+          propertyId: property?.id,
+          propertyTitle: property?.title,
+        },
       });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (error) {
-      console.error('Failed to submit inquiry:', error);
+      if (error) {
+        console.error('Failed to submit inquiry:', error);
+        toast.error('Failed to send inquiry. Please try again.');
+        return;
+      }
+      
+      // Check for rate limit error
+      if (responseData?.error) {
+        if (responseData.error.includes('Too many requests')) {
+          toast.error('Too many requests. Please try again later.');
+        } else {
+          toast.error(responseData.error);
+        }
+        return;
+      }
+    } catch (err) {
+      setIsSubmitting(false);
+      console.error('Failed to submit inquiry:', err);
       toast.error('Failed to send inquiry. Please try again.');
       return;
     }

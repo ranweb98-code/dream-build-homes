@@ -1,1 +1,7 @@
 project_id = "qdsneprcayccuobnybus"
+
+[functions.get-properties]
+verify_jwt = false
+
+[functions.submit-inquiry]
+verify_jwt = false

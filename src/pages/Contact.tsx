@@ -42,29 +42,45 @@ export default function Contact() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
-    const { error } = await supabase
-      .from('inquiries')
-      .insert({
-        property_id: propertyId,
-        property_title: propertyTitle,
-        full_name: data.fullName,
-        email: data.email,
-        phone: data.phone,
-        message: data.message,
-        preferred_contact: data.preferredContact,
+    try {
+      const { data: responseData, error } = await supabase.functions.invoke('submit-inquiry', {
+        body: {
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          message: data.message,
+          preferredContact: data.preferredContact,
+          propertyId: propertyId,
+          propertyTitle: propertyTitle,
+        },
       });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (error) {
-      console.error('Failed to submit inquiry:', error);
+      if (error) {
+        console.error('Failed to submit inquiry:', error);
+        toast.error('Failed to send message. Please try again.');
+        return;
+      }
+      
+      // Check for rate limit error
+      if (responseData?.error) {
+        if (responseData.error.includes('Too many requests')) {
+          toast.error('Too many requests. Please try again later.');
+        } else {
+          toast.error(responseData.error);
+        }
+        return;
+      }
+
+      setIsSuccess(true);
+      reset();
+      toast.success('Message sent successfully!');
+    } catch (err) {
+      setIsSubmitting(false);
+      console.error('Failed to submit inquiry:', err);
       toast.error('Failed to send message. Please try again.');
-      return;
     }
-
-    setIsSuccess(true);
-    reset();
-    toast.success('Message sent successfully!');
   };
 
   return (
