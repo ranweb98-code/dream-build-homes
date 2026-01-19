@@ -67,9 +67,15 @@ function convertSheetUrlToJsonUrl(url: string): string | null {
       return null;
     }
     
-    // Whitelist Google domains
+    // Strict whitelist for Google Sheets domain only
     if (parsed.hostname !== 'docs.google.com') {
       console.error('Only Google Sheets URLs are allowed');
+      return null;
+    }
+    
+    // Validate path starts with /spreadsheets/d/ to prevent other Google services
+    if (!parsed.pathname.startsWith('/spreadsheets/d/')) {
+      console.error('URL must be a Google Sheets spreadsheet URL');
       return null;
     }
   } catch {
@@ -77,18 +83,21 @@ function convertSheetUrlToJsonUrl(url: string): string | null {
     return null;
   }
 
-  const patterns = [
-    /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
-    /\/d\/([a-zA-Z0-9-_]+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) {
-      const sheetId = match[1];
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  // Extract sheet ID with strict pattern matching
+  const sheetIdPattern = /^\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
+  const match = url.match(sheetIdPattern);
+  
+  if (match && match[1]) {
+    const sheetId = match[1];
+    // Validate sheet ID format (alphanumeric, hyphens, underscores only)
+    if (!/^[a-zA-Z0-9-_]+$/.test(sheetId)) {
+      console.error('Invalid sheet ID format');
+      return null;
     }
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
   }
+  
+  console.error('Could not extract sheet ID from URL');
   return null;
 }
 
