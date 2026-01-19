@@ -58,8 +58,9 @@ function parseSheetData(data: SheetRow[]): Property[] {
 
 function convertSheetUrlToJsonUrl(url: string): string | null {
   // Validate URL security
+  let parsed: URL;
   try {
-    const parsed = new URL(url);
+    parsed = new URL(url);
     
     // Only allow HTTPS
     if (parsed.protocol !== 'https:') {
@@ -83,9 +84,9 @@ function convertSheetUrlToJsonUrl(url: string): string | null {
     return null;
   }
 
-  // Extract sheet ID with strict pattern matching
+  // Extract sheet ID with strict pattern matching - use pathname, not full URL
   const sheetIdPattern = /^\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
-  const match = url.match(sheetIdPattern);
+  const match = parsed.pathname.match(sheetIdPattern);
   
   if (match && match[1]) {
     const sheetId = match[1];
