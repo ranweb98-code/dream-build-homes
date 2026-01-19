@@ -10,15 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Phone, Mail, MapPin, Loader2, CheckCircle } from 'lucide-react';
+import { Mail, MapPin, Loader2, CheckCircle } from 'lucide-react';
 
 const schema = z.object({
-  fullName: z.string().min(2).max(100),
-  phone: z.string().min(10).max(20),
-  email: z.string().email().max(255),
-  message: z.string().min(10).max(1000),
-  preferredContact: z.enum(['phone', 'email', 'either']),
+  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
+  email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
+  message: z.string().trim().min(10, "Message must be at least 10 characters").max(1000, "Message must be less than 1000 characters"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -31,11 +28,12 @@ export default function Contact() {
   const propertyId = searchParams.get('propertyId');
   const propertyTitle = searchParams.get('propertyTitle');
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
+      fullName: '',
+      email: '',
       message: propertyTitle ? `I'm interested in "${propertyTitle}" (ID: ${propertyId}).` : '',
-      preferredContact: 'either',
     },
   });
 
@@ -47,9 +45,7 @@ export default function Contact() {
         body: {
           fullName: data.fullName,
           email: data.email,
-          phone: data.phone,
           message: data.message,
-          preferredContact: data.preferredContact,
           propertyId: propertyId,
           propertyTitle: propertyTitle,
         },
@@ -97,7 +93,6 @@ export default function Contact() {
               <div>
                 <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
                 <div className="space-y-4">
-                  <div className="flex items-start gap-4"><Phone className="h-5 w-5 text-primary mt-1" /><div><p className="font-medium">Phone</p><p className="text-muted-foreground">+1 (555) 123-4567</p></div></div>
                   <div className="flex items-start gap-4"><Mail className="h-5 w-5 text-primary mt-1" /><div><p className="font-medium">Email</p><p className="text-muted-foreground">info@prestigeestates.com</p></div></div>
                   <div className="flex items-start gap-4"><MapPin className="h-5 w-5 text-primary mt-1" /><div><p className="font-medium">Office</p><p className="text-muted-foreground">123 Luxury Lane, Beverly Hills, CA 90210</p></div></div>
                 </div>
@@ -106,22 +101,50 @@ export default function Contact() {
 
             <div className="bg-card p-8 rounded-lg border animate-fade-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
               {isSuccess ? (
-                <div className="text-center py-12"><CheckCircle className="h-16 w-16 text-success mx-auto mb-4" /><h3 className="text-xl font-semibold">Message Sent!</h3><p className="text-muted-foreground">We'll get back to you soon.</p></div>
+                <div className="text-center py-12">
+                  <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold">Message Sent!</h3>
+                  <p className="text-muted-foreground">Thanks! Your inquiry was sent successfully. We will get back to you by email shortly.</p>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div><Label>Full Name *</Label><Input {...register('fullName')} className={errors.fullName ? 'border-destructive' : ''} /></div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div><Label>Phone *</Label><Input type="tel" {...register('phone')} /></div>
-                    <div><Label>Email *</Label><Input type="email" {...register('email')} /></div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Input 
+                      id="fullName"
+                      placeholder="John Smith"
+                      {...register('fullName')} 
+                      className={errors.fullName ? 'border-destructive' : ''} 
+                    />
+                    {errors.fullName && (
+                      <p className="text-sm text-destructive">{errors.fullName.message}</p>
+                    )}
                   </div>
-                  <div><Label>Message *</Label><Textarea rows={4} {...register('message')} /></div>
-                  <div>
-                    <Label>Preferred Contact Method</Label>
-                    <RadioGroup value={watch('preferredContact')} onValueChange={(v) => setValue('preferredContact', v as 'phone' | 'email' | 'either')} className="flex gap-4 mt-2">
-                      <div className="flex items-center gap-2"><RadioGroupItem value="phone" id="p" /><Label htmlFor="p">Phone</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="email" id="e" /><Label htmlFor="e">Email</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="either" id="ei" /><Label htmlFor="ei">Either</Label></div>
-                    </RadioGroup>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input 
+                      id="email"
+                      type="email" 
+                      placeholder="john@example.com"
+                      {...register('email')} 
+                      className={errors.email ? 'border-destructive' : ''} 
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message *</Label>
+                    <Textarea 
+                      id="message"
+                      rows={4} 
+                      placeholder="Tell us about your interest..."
+                      {...register('message')} 
+                      className={errors.message ? 'border-destructive' : ''} 
+                    />
+                    {errors.message && (
+                      <p className="text-sm text-destructive">{errors.message.message}</p>
+                    )}
                   </div>
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</> : 'Send Message'}

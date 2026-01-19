@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +19,9 @@ import { Property } from '@/types/property';
 import { Loader2, CheckCircle } from 'lucide-react';
 
 const contactSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  phone: z.string().min(10, 'Please enter a valid phone number').max(20),
-  email: z.string().email('Please enter a valid email address').max(255),
-  message: z.string().min(10, 'Message must be at least 10 characters').max(1000),
-  preferredContact: z.enum(['phone', 'email', 'either']),
+  fullName: z.string().trim().min(2, { message: "Name must be at least 2 characters" }).max(100, { message: "Name must be less than 100 characters" }),
+  email: z.string().trim().email({ message: "Please enter a valid email address" }).max(255, { message: "Email must be less than 255 characters" }),
+  message: z.string().trim().min(10, { message: "Message must be at least 10 characters" }).max(1000, { message: "Message must be less than 1000 characters" }),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -43,23 +40,17 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
     register,
     handleSubmit,
     reset,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
       fullName: '',
-      phone: '',
       email: '',
       message: property
         ? `I am interested in the property: "${property.title}" (ID: ${property.id}). Please contact me with more information.`
         : '',
-      preferredContact: 'either',
     },
   });
-
-  const preferredContact = watch('preferredContact');
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
@@ -69,9 +60,7 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
         body: {
           fullName: data.fullName,
           email: data.email,
-          phone: data.phone,
           message: data.message,
-          preferredContact: data.preferredContact,
           propertyId: property?.id,
           propertyTitle: property?.title,
         },
@@ -127,7 +116,7 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
             <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Inquiry Sent!</h3>
             <p className="text-muted-foreground">
-              We'll get back to you as soon as possible.
+              Thanks! Your inquiry was sent successfully. We will get back to you by email shortly.
             </p>
           </div>
         ) : (
@@ -155,34 +144,18 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
-                    {...register('phone')}
-                    className={errors.phone ? 'border-destructive' : ''}
-                  />
-                  {errors.phone && (
-                    <p className="text-sm text-destructive">{errors.phone.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john@example.com"
-                    {...register('email')}
-                    className={errors.email ? 'border-destructive' : ''}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email.message}</p>
-                  )}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  {...register('email')}
+                  className={errors.email ? 'border-destructive' : ''}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -197,36 +170,6 @@ export function InquiryModal({ property, isOpen, onClose }: InquiryModalProps) {
                 {errors.message && (
                   <p className="text-sm text-destructive">{errors.message.message}</p>
                 )}
-              </div>
-
-              <div className="space-y-3">
-                <Label>Preferred Contact Method</Label>
-                <RadioGroup
-                  value={preferredContact}
-                  onValueChange={(value) =>
-                    setValue('preferredContact', value as 'phone' | 'email' | 'either')
-                  }
-                  className="flex flex-wrap gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="phone" id="phone-pref" />
-                    <Label htmlFor="phone-pref" className="font-normal cursor-pointer">
-                      Phone
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="email" id="email-pref" />
-                    <Label htmlFor="email-pref" className="font-normal cursor-pointer">
-                      Email
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="either" id="either-pref" />
-                    <Label htmlFor="either-pref" className="font-normal cursor-pointer">
-                      Either
-                    </Label>
-                  </div>
-                </RadioGroup>
               </div>
 
               <div className="flex gap-3 pt-4">
