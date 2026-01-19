@@ -46,7 +46,44 @@ export default function Admin() {
     setInputUrl(sheetUrl);
   }, [sheetUrl]);
 
+  // Validate Google Sheet URL format
+  const validateSheetUrl = (url: string): { valid: boolean; error?: string } => {
+    if (!url.trim()) {
+      return { valid: true }; // Empty URL is allowed (clears config)
+    }
+    
+    try {
+      const parsed = new URL(url);
+      
+      // Only allow HTTPS
+      if (parsed.protocol !== 'https:') {
+        return { valid: false, error: 'Only HTTPS URLs are allowed' };
+      }
+      
+      // Only allow Google Sheets domain
+      if (parsed.hostname !== 'docs.google.com') {
+        return { valid: false, error: 'Only Google Sheets URLs are allowed' };
+      }
+      
+      // Validate spreadsheet path format
+      if (!/\/spreadsheets\/d\/[a-zA-Z0-9-_]+/.test(url)) {
+        return { valid: false, error: 'Invalid Google Sheets URL format. Use the share URL from your spreadsheet.' };
+      }
+      
+      return { valid: true };
+    } catch {
+      return { valid: false, error: 'Invalid URL format' };
+    }
+  };
+
   const handleSave = async () => {
+    const validation = validateSheetUrl(inputUrl);
+    
+    if (!validation.valid) {
+      toast.error(validation.error || 'Invalid URL');
+      return;
+    }
+    
     await updateSheetUrl(inputUrl);
     if (inputUrl.trim()) {
       toast.success('Sheet URL saved and synced!');
