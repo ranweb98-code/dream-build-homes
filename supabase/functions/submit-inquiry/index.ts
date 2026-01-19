@@ -16,26 +16,14 @@ function validateEmail(email: string): boolean {
   return emailRegex.test(email) && email.length <= 255;
 }
 
-function validatePhone(phone: string): boolean {
-  // Allow digits, spaces, dashes, parentheses, and plus sign
-  const phoneRegex = /^[\d\s\-\(\)\+]+$/;
-  return phoneRegex.test(phone) && phone.length >= 10 && phone.length <= 20;
-}
-
 function validateString(str: string, minLength: number, maxLength: number): boolean {
   return typeof str === 'string' && str.trim().length >= minLength && str.length <= maxLength;
-}
-
-function validatePreferredContact(value: string): boolean {
-  return ['phone', 'email', 'either'].includes(value);
 }
 
 interface InquiryPayload {
   fullName: string;
   email: string;
-  phone: string;
   message: string;
-  preferredContact: 'phone' | 'email' | 'either';
   propertyId?: string;
   propertyTitle?: string;
 }
@@ -113,7 +101,7 @@ serve(async (req) => {
       );
     }
     
-    const { fullName, email, phone, message, preferredContact, propertyId, propertyTitle } = payload;
+    const { fullName, email, message, propertyId, propertyTitle } = payload;
     
     // Validate required fields
     const errors: string[] = [];
@@ -126,16 +114,8 @@ serve(async (req) => {
       errors.push('Invalid email address');
     }
     
-    if (!validatePhone(phone)) {
-      errors.push('Phone must be between 10 and 20 characters');
-    }
-    
     if (!validateString(message, 10, 1000)) {
       errors.push('Message must be between 10 and 1000 characters');
-    }
-    
-    if (!validatePreferredContact(preferredContact)) {
-      errors.push('Preferred contact must be phone, email, or either');
     }
     
     // Validate optional fields if provided
@@ -158,7 +138,7 @@ serve(async (req) => {
       );
     }
     
-    // Insert inquiry
+    // Insert inquiry (phone and preferred_contact now optional/defaulted)
     const { data, error: insertError } = await supabase
       .from('inquiries')
       .insert({
@@ -166,9 +146,9 @@ serve(async (req) => {
         property_title: propertyTitle || null,
         full_name: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim(),
+        phone: '', // No longer collecting phone
         message: message.trim(),
-        preferred_contact: preferredContact,
+        preferred_contact: 'email', // Always email now
       })
       .select('id')
       .single();
