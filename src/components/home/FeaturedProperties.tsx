@@ -8,11 +8,13 @@ import { Property } from '@/types/property';
 import { ArrowRight } from 'lucide-react';
 
 export function FeaturedProperties() {
-  const { getFeaturedProperties, loading } = usePropertyContext();
+  const { getFeaturedProperties, properties, loading } = usePropertyContext();
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
 
-  const featured = getFeaturedProperties().slice(0, 3);
+  const featuredProps = getFeaturedProperties();
+  // If no featured properties, show first 3 properties
+  const featured = featuredProps.length > 0 ? featuredProps.slice(0, 3) : properties.slice(0, 3);
 
   const handleInquire = (property: Property) => {
     setSelectedProperty(property);
