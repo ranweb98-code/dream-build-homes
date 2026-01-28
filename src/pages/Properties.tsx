@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { usePropertyContext } from '@/contexts/PropertyContext';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
@@ -10,6 +10,10 @@ export default function Properties() {
   const { properties, loading } = usePropertyContext();
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleInquire = (property: Property) => {
     setSelectedProperty(property);
