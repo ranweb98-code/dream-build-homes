@@ -12,6 +12,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
+import Match from "./pages/Match";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
